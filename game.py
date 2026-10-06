@@ -14,10 +14,15 @@ def bezier(p0, p1, p2, p3, t):
     return pygame.Vector2(x, y)
 
 
+CURRENT_WAVE = 1
+
 def enemy_tint(kind):
     """Return an (r, g, b) colour override for an enemy kind, or None for the default."""
-    pass
-
+    if CURRENT_WAVE < 2:
+        return None
+    base = ENEMY_COLORS[kind]
+    shift = min((CURRENT_WAVE - 1) * 15, 90)
+    return tuple(min(255, c + shift) for c in base)
 
 def on_wave_start(wave):
     """Called at the start of every wave; add banners, speed-ups, or palette swaps here."""
@@ -74,6 +79,8 @@ class Enemy:
 
 
 def spawn_wave(wave):
+    global CURRENT_WAVE
+    CURRENT_WAVE = wave
     enemies, index = [], 0
     layout = [("boss", 4, 90), ("red", 8, 130), ("red", 8, 170), ("blue", 8, 210)]
     for kind, count, y in layout:
