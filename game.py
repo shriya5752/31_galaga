@@ -6,6 +6,8 @@ WIDTH, HEIGHT = 600, 700
 PLAYER_Y, PLAYER_SPEED, SHIP_GAP = HEIGHT - 50, 300, 30
 ENTRY_TIME = 2.0
 
+WAVE_BANNER = None  # (text, remaining_seconds)
+
 
 def bezier(p0, p1, p2, p3, t):
     u = 1 - t
@@ -24,9 +26,12 @@ def enemy_tint(kind):
     shift = min((CURRENT_WAVE - 1) * 15, 90)
     return tuple(min(255, c + shift) for c in base)
 
+WAVE_BANNER = None  # (text, remaining_seconds)
+
 def on_wave_start(wave):
     """Called at the start of every wave; add banners, speed-ups, or palette swaps here."""
-    pass
+    global WAVE_BANNER
+    WAVE_BANNER = (f"WAVE {wave}", 1.5)
 
 
 def shield_charges(wave):
@@ -140,6 +145,10 @@ class Game:
         if self.state != "play":
             return
         self.time += dt
+        if WAVE_BANNER is not None:
+            text, remaining = WAVE_BANNER
+            remaining -= dt
+            globals()['WAVE_BANNER'] = (text, remaining) if remaining > 0 else None
         self.cooldown -= dt
         self.invulnerable = max(0.0, self.invulnerable - dt)
         span = SHIP_GAP * (self.ships - 1)
@@ -211,7 +220,15 @@ class Game:
             for sx in self.ship_xs():
                 pygame.draw.polygon(screen, (230, 230, 240), [(sx, PLAYER_Y - 18), (sx + 14, PLAYER_Y + 12), (sx - 14, PLAYER_Y + 12)])
                 pygame.draw.polygon(screen, (220, 60, 60), [(sx - 14, PLAYER_Y + 12), (sx - 6, PLAYER_Y - 2), (sx - 4, PLAYER_Y + 12)])
+
+        if WAVE_BANNER is not None:
+            text, _ = WAVE_BANNER
+            banner = font.render(text, True, (255, 255, 120))
+            screen.blit(banner, banner.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 60)))
+        
         hud = font.render(f"Score {self.score}  Lives {self.lives}  Wave {self.wave}  R = reset", True, (240, 240, 240))
+
+        
         screen.blit(hud, (10, 8))
         if self.state == "lose":
             label = font.render("GAME OVER - Press R", True, (255, 255, 120))
